@@ -17,8 +17,8 @@ This is a comprehensive, engineer led course that covers HashiCorp’s Terraform
 
 Attendees to have the following machine capable of the following:
 
-WIFI and SSH-enabled device with a Terminal
-Modern Internet browser such as Firefox, Chrome, or Safari
-Ability to connect to the public Internet unrestricted (no proxies or firewalls) 
-Ability to run a web collaboration software such as Zoom, Slack etc ..
-With the current global situation, all training will be held virtually over a web collaboration software.
+- WIFI and SSH-enabled device with a Terminal
+- Modern Internet browser such as Firefox, Chrome, or Safari
+- Ability to connect to the public Internet unrestricted (no proxies or firewalls) 
+- Ability to run a web collaboration software such as Zoom, Slack etc ..
+- With the current global situation, all training will be held virtually over a web collaboration software.
