@@ -296,3 +296,5 @@ iam_policy = {
   ]
 }
 ```
+
+After completion of this lab, run a `terraform apply` to clean up your work.
