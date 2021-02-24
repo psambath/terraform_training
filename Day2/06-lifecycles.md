@@ -37,12 +37,12 @@ mkdir /workstation/terraform/lab_6_lifecycle_demo && cd $_
 ```shell
 touch main.tf
 touch variables.tf
-touch main.tf
+touch outputs.tf
 ```
 
 Create an S3 security group and an instance that uses it.
 
-```bash
+```hcl
 provider "aws" {
   region = var.region
 }
@@ -76,17 +76,8 @@ resource "aws_instance" "web" {
 }
 ```
 
-Provision these resources.
-
-```shell
-terraform init
-```
-
-```shell
-terraform apply -auto-approve
-```
-
 Update outputs.tf file
+
 ```hcl
 output "security_group_name" {
   value = aws_security_group.training.name
@@ -106,11 +97,22 @@ output "web_server_id" {
 ```
 
 Update variables.tf file
+
 ```hcl
 variable region {
   default     = "us-east-1"
   description = "AWS Account Region"
 }
+```
+
+Provision these resources.
+
+```shell
+terraform init
+```
+
+```shell
+terraform apply -auto-approve
 ```
 
 The commands should succeed without error.
