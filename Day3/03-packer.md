@@ -23,7 +23,7 @@ Create a new json file called `web-vistors.json` with the following builder.
       "type": "amazon-ebs",
       "region": "us-east-1",
       "source_ami": "{{user `aws_source_ami`}}",
-      "instance_type": "t1.micro",
+      "instance_type": "t3.micro",
       "ssh_username": "ubuntu",
       "ssh_pty": "true",
       "ami_name": "tmp-{{timestamp}}",
