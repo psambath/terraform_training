@@ -180,7 +180,7 @@ If you run `terraform apply` now, you'll notice that this code will destroy the 
 
 ### Task 7: Update the output variables to pull DNS addresses.
 
-When using Terraform's `for-each` our output blocks need to be updated to utilize `for` to loop through the server names.  This differs from using `count` which utilized the Terraform splat operator `*`.
+When using Terraform's `for-each` our output blocks need to be updated to utilize `for` to loop through the server names.  This differs from using `count` which utilized the Terraform splat operator `*`.  Add the following output block to your `main.tf`.
 
 ```
 output "public_dns" {
@@ -188,6 +188,3 @@ output "public_dns" {
   value = { for p in sort(keys(var.servers)) : p => aws_instance.web[p].public_dns }
 }
 ```
-
-The syntax `aws_instance.web.*` refers to all of the instances, so this will output a list of all of the public IPs and public DNS records. 
-
