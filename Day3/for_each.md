@@ -14,6 +14,7 @@ A more mature approach to create multiple instances while keeping code DRY is to
 - Task 4: Refactor code to use Terraform `for-each`
 - Task 5: Look at the number of AWS instances with `terraform state list`
 - Task 6: Update the server variables to determine which instance will be destroyed.
+- Task 7: Update the output variables to pull DNS addresses.
 
 ## Task 1: Change the number of AWS instances with `count`
 
@@ -47,6 +48,10 @@ resource "aws_instance" "web" {
     "Name"        = "Student"
     "Environment" = "Training"
   }
+}
+
+output "public_dns" {
+  value = aws_instance.web.*.public_dns
 }
 ```
 
@@ -174,15 +179,14 @@ Update the `servers` variable to remove the `server-iis` instance by removing th
 If you run `terraform apply` now, you'll notice that this code will destroy the `server-iis`, allowing us to target a specific instance that needs to be updated/removed.
 
 
-To do so, modify the output blocks in `server/server.tf` as follows:
+### Task 7: Update the output variables to pull DNS addresses.
+
+When using Terraform's `for-each` our output blocks need to be updated to utilize `for` to loop through the server names.  This differs from using `count` which utilized the Terraform splat operator `*`.
 
 ```
-output "public_ip" {
-  value = aws_instance.web.*.public_ip
-}
-
 output "public_dns" {
-  value = aws_instance.web.*.public_dns
+  description = "Public DNS names of the Servers"
+  value = { for p in sort(keys(var.servers)) : p => aws_instance.web[p].public_dns }
 }
 ```
 
