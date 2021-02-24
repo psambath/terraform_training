@@ -41,12 +41,12 @@ resource "null_resource" "web_cluster" {
   # Bootstrap script can run on any instance of the cluster
   # So we just choose the first in this case
   connection {
-    host = "${element(aws_instance.web.*.public_ip, 0)}"
+    host = element(aws_instance.web.*.public_ip, 0)
   }
 
   provisioner "local-exec" {
     # Bootstrap script called with private_ip of each node in the clutser
-    command = "echo ${join("Nodes of the Cluster : ", aws_instance.web.*.private_ip)}"
+    command = "echo Nodes of the Cluster: ${join(", ", aws_instance.web.*.private_ip)}"
   }
 }
 ```
