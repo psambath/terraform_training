@@ -23,7 +23,6 @@ Create a new directory for the lab and add the following `main.tf`.  Also copy y
 Notice the count is set to `2` for the number of `aws_instances`.
 
 ```hcl
-# ...
 variable "access_key" {}
 variable "secret_key" {}
 variable "region" {
