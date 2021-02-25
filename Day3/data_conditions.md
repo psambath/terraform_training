@@ -21,18 +21,20 @@ To expand on this process we will also introduce the Conditional Expression, all
 Create a new directory for the lab and add a `data.tf` file with the following items.  Also copy your `terraform.tfvars` to this directory.
 
 ```hcl
-data "aws_ami" "ubuntu_16_04" {
+data "aws_ami" "windows" {
   most_recent = true
-
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+    values = ["Windows_Server-2019-English-Full-Base-*"]
   }
-
-  owners = ["099720109477"]
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+  owners = ["801119661308"]
 }
 
-data "aws_ami" "ubuntu_18_04" {
+data "aws_ami" "ubuntu" {
   most_recent = true
 
   filter {
@@ -51,18 +53,18 @@ Run a `terraform init` followed by a `terraform apply` to query the data items s
 ```bash
 terraform state list
 
-data.aws_ami.ubuntu_16_04
-data.aws_ami.ubuntu_18_04
+data.aws_ami.windows
+data.aws_ami.ubuntu
 ```
 
 
 ```bash
-terraform state show data.aws_ami.ubuntu_18_04
+terraform state show data.aws_ami.ubuntu
 ```
 
 ```bash
-# data.aws_ami.ubuntu_18_04:
-data "aws_ami" "ubuntu_18_04" {
+# data.aws_ami.ubuntu:
+data "aws_ami" "ubuntu" {
     architecture          = "x86_64"
     arn                   = "arn:aws:ec2:us-east-1::image/ami-02fe94dee086c0c37"
     block_device_mappings = [
@@ -88,7 +90,7 @@ Add a `main.tf` in the same directory as the `data.tf` and the following code to
 
 ```hcl
 resource "aws_instance" "web" {
-  ami                    = data.aws_ami.ubuntu_18_04.image_id
+  ami                    = data.aws_ami.ubuntu.image_id
   instance_type          = "t2.micro"
   subnet_id              = var.subnet_id
   vpc_security_group_ids = var.vpc_security_group_ids
