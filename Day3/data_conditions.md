@@ -2,19 +2,15 @@
 
 Duration: 15 minutes
 
-So far, we've already used arguments to configure your resources. These arguments are used by the provider to specify things like the AMI to use, and the type of instance to provision.
+So far, we've already used arguments to configure your resources. These arguments are used by the provider to specify things like the AMI to use, and the type of instance to provision.  Terraform also supports the ability to look up information through the use of `data` resources.
 
-Terraform also supports the ability to look up information through the use of `data` resources.
-
-For instance, it's not uncommon to need to query the value of an AMI type within a regions for an EC2 instance.  AMIs are specific to each region therefore it is often more vaulable to query for this value rather then specifying it in a variable.  This is where the use of a `data` resource block within HCL is convienent.
-
-To expand on this process we will also introduce the Conditional Expression, allowing us to determine if we want to pull a Linux or Windows image.
-
+For instance, it's not uncommon to need to query the value of an AMI type within a regions for an EC2 instance.  AMIs are specific to each region therefore it is often more vaulable to query for this value rather then specifying it in a variable.  This is where the use of a `data` resource block within HCL is convienent.  To expand on this process we will also introduce the Conditional Expression, allowing us to determine if we want to pull a Linux or Windows image.
 
 - Task 1: Query the AMI Image for Ubuntu and Windows using a Terraform `data` resource.
 - Task 2: Look at the returned value of the data resources using a `terraform state list` and `terraform show` command.
 - Task 3: Leverage Terraform's interpolation to specify the AMI for our `aws_instance`
 - Task 4: Use Terraform conditional operators to determine the image/operating system of our `aws_instance`
+- Task 5: Change the OS type for the server by changing the `server_os` variable.
 
 ## Task 1: Query the AMI Image for Ubuntu and Windows using a Terraform `data` resource.
 
@@ -56,7 +52,6 @@ terraform state list
 data.aws_ami.windows
 data.aws_ami.ubuntu
 ```
-
 
 ```bash
 terraform state show data.aws_ami.ubuntu
@@ -113,9 +108,7 @@ variable vpc_security_group_ids {
 variable identity {}
 ```
 
-Run a `terraform apply` to build out the EC2 instance using the AMI that was looked up from the data lookup.
-
-Run a `terraform state show aws_instance.web` to see that the server was build using the AMI from the data interpolation.
+Run a `terraform apply` to build out the EC2 instance using the AMI that was looked up from the data lookup and validate with a `terraform state show aws_instance.web` to see that the server was build using the AMI from the data interpolation.
 
 ```bash
 terraform state show aws_instance.web
@@ -160,6 +153,13 @@ resource "aws_instance" "web" {
 }
 ```
 
-Run a `terraform apply` followed by a `terraform state list` to view how the servers are accounted for in Terraform's State.
+Run a `terraform apply` to validate a zero change plan as a result of the refactor.
 
-Change the value of your `server_os` variable to now specify `windows` and the conditional operator will query for the Windows AMI using the `data` interpolation.
+
+### Task 5: Change the OS type for the server by changing the `server_os` variable.
+
+Change the value of your `server_os` variable to now specify `windows` and the conditional operator will query for the Windows AMI using the `data` interpolation.  This can be done within the variable definition or passed directly on the cli as follows:
+
+```bash
+terraform apply -var 'server_os=windows'
+```
