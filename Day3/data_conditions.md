@@ -14,11 +14,11 @@ To expand on this process we will also introduce the Conditional Expression, all
 - Task 1: Query the AMI Image for Ubuntu and Windows using a Terraform `data` resource.
 - Task 2: Look at the returned value of the data resources using a `terraform state list` and `terraform show` command.
 - Task 3: Leverage Terraform's interpolation to specify the AMI for our `aws_instance`
-- Task 4: Use Terraform conditional operators to determine the image type of our `aws_instance`
+- Task 4: Use Terraform conditional operators to determine the image/operating system of our `aws_instance`
 
 ## Task 1: Query the AMI Image for Ubuntu and Windows using a Terraform `data` resource.
 
-Create a new directory for the lab and add a `data.tf` file with the following items:
+Create a new directory for the lab and add a `data.tf` file with the following items.  Also copy your `terraform.tfvars` to this directory.
 
 ```hcl
 data "aws_ami" "ubuntu_16_04" {
@@ -46,37 +46,52 @@ data "aws_ami" "ubuntu_18_04" {
 
 ### Task 2: Look at the returned value of the data resources using a `terraform state list` and `terraform show` command.
 
-Run a `terraform apply` to query the data items specified and view those items by issuing a `terraform state list`.
+Run a `terraform init` followed by a `terraform apply` to query the data items specified and view those items by issuing a `terraform state list`.
 
+```bash
+terraform state list
+
+data.aws_ami.ubuntu_16_04
+data.aws_ami.ubuntu_18_04
+```
+
+
+```bash
+terraform state show data.aws_ami.ubuntu_18_04
+```
+
+```bash
+# data.aws_ami.ubuntu_18_04:
+data "aws_ami" "ubuntu_18_04" {
+    architecture          = "x86_64"
+    arn                   = "arn:aws:ec2:us-east-1::image/ami-02fe94dee086c0c37"
+    block_device_mappings = [
+        {
+            device_name  = "/dev/sda1"
+            ebs          = {
+                "delete_on_termination" = "true"
+                "encrypted"             = "false"
+                "iops"                  = "0"
+                "snapshot_id"           = "snap-074c9b6e7aeb0e066"
+                "throughput"            = "0"
+                "volume_size"           = "8"
+                "volume_type"           = "gp2"
+            }
+            no_device    = ""
+            virtual_name = ""
+        },
+#...
+```
 
 ### Task 3: Leverage Terraform's interpolation to specify the AMI for our `aws_instance`
-
-Add a `main.tf` in the same directory as the `data.tf` and the following code to that file. Also copy your `terraform.tfvars` to this directory.
+Add a `main.tf` in the same directory as the `data.tf` and the following code to that file.
 
 ```hcl
 resource "aws_instance" "web" {
-  ami = (var.ubuntu_version == "18") ? data.aws_ami.ubuntu_18_04.image_id : data.aws_ami.ubuntu_16_04.image_id
+  ami                    = data.aws_ami.ubuntu_18_04.image_id
   instance_type          = "t2.micro"
   subnet_id              = var.subnet_id
   vpc_security_group_ids = var.vpc_security_group_ids
-  key_name               = var.key_name
-
-  connection {
-    user        = "ubuntu"
-    private_key = var.private_key
-    host        = self.public_ip
-  }
-
-  provisioner "file" {
-    source      = "assets"
-    destination = "/tmp/"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo sh /tmp/assets/setup-web.sh",
-    ]
-  }
   
   tags = {
     "Identity"    = var.identity
@@ -94,33 +109,43 @@ variable vpc_security_group_ids {
   type = list
 }
 variable identity {}
-variable key_name {}
-variable private_key {}
+```
 
-variable ubuntu_version {
+Run a `terraform apply` to build out the EC2 instance using the AMI that was looked up from the data lookup.
+
+Run a `terraform state show aws_instance.web` to see that the server was build using the AMI from the data interpolation.
+
+```bash
+terraform state show aws_instance.web
+
+# aws_instance.web:
+resource "aws_instance" "web" {
+    ami                          = "ami-02fe94dee086c0c37"
+```
+
+### Task 4: Use Terraform conditional operators to determine the image operating system for our `aws_instance`
+
+A conditional expression uses the value of a bool expression to select one of two values.  The syntax of a conditional expression is as follows:
+
+```hcl
+condition ? true_val : false_val
+```
+
+We create and utilize a variable to determine which AMI will be used via a conditional expression.  Update your `variables.tf` to add a new variable for `server_os`
+
+```hcl
+variable server_os {
     type = string
-    description = "Ubuntu Version.  Example: 16, 18"
-    default = 18
+    description = "Server Operating System"
+    default = "ubuntu"
 }
 ```
 
-## Task 2: Look at the number of AWS instances with `terraform state list`
-Run a `terraform apply` followed by a `terraform state list` to view how the servers are accounted for in Terraform's State.
+Update your `main.tf` to include a conditional operator for selecting an AMI based on the value of the `server_os` variable.
 
-```bash
-terraform state list
-
-aws_instance.web[0]
-aws_instance.web[1]
 ```
-
-## Task 3: Decrease the Count and determine which instance will be destroyed.
-Update the count from `2` to `1`
-
-```hcl
 resource "aws_instance" "web" {
-  count                  = 1
-  ami                    = var.ami
+  ami                    = (var.server_os == "ubuntu") ? data.aws_ami.ubuntu.image_id : data.aws_ami.windows.image_id
   instance_type          = "t2.micro"
   subnet_id              = var.subnet_id
   vpc_security_group_ids = var.vpc_security_group_ids
@@ -135,106 +160,4 @@ resource "aws_instance" "web" {
 
 Run a `terraform apply` followed by a `terraform state list` to view how the servers are accounted for in Terraform's State.
 
-```
-terraform state list
-
-aws_instance.web[0]
-```
-
-You will see that when using the `count` parameter you have very limited control as to which server Terraform will destroy.  It will always default to destroying the server with the highest index count.
-
-
-## Task 4: Refactor code to use Terraform `for-each`
-Refactor `main.tf` to make use of the `for-each` command rather then the count command.  Replace the existing code in your `main.tf` with the following:
-
-```hcl
-variable "identity" {
-  default = "rpt"
-}
-
-variable "aws_region" {
-  description = "AWS region"
-  default     = "us-east-1"
-}
-
-variable "servers" {
-  description = "Map of server types to configuration"
-  type        = map(any)
-  default = {
-    server-iis = {
-      ami                    = "ami-07f5c641c23596eb9"
-      instance_type          = "t2.micro",
-      environment            = "dev"
-      subnet_id              = "subnet-031bf0c9a309fcd8d"
-      vpc_security_group_ids = ["sg-01380b40dc19ad166"]
-    },
-    server-apache = {
-      ami                    = "ami-07f5c641c23596eb9"
-      instance_type          = "t2.nano",
-      environment            = "test"
-      subnet_id              = "subnet-031bf0c9a309fcd8d"
-      vpc_security_group_ids = ["sg-01380b40dc19ad166"]
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-resource "aws_instance" "web" {
-  for_each               = var.servers
-  ami                    = each.value.ami
-  instance_type          = each.value.instance_type
-  subnet_id              = each.value.subnet_id
-  vpc_security_group_ids = each.value.vpc_security_group_ids
-
-  tags = {
-    "Identity"    = var.identity
-    "Name"        = each.key
-    "Environment" = each.value.environment
-  }
-}
-```
-
-If you run `terraform apply` now, you'll notice that this code will destroy the previous resource and create two new servers based on the attributes defined inside the `servers` variable, which is defined as a map of our servers.
-
-
-### Task 5: Look at the number of AWS instances with `terraform state list`
-
-```bash
-terraform state list
-
-aws_instance.web["server-iis"]
-aws_instance.web["server-apache"]
-```
-
-Since we used _for-each_ to the aws_instance.web resource, it now refers to multiple resources with key references from the `servers` variable.
-
-## Task 6: Update the server variables to determine which instance will be destroyed.
-
-Update the `servers` variable to remove the `server-iis` instance by removing the following block:
-
-```hcl
-    server-iis = {
-      ami                    = "ami-07f5c641c23596eb9"
-      instance_type          = "t2.micro",
-      environment            = "dev"
-      subnet_id              = "subnet-031bf0c9a309fcd8d"
-      vpc_security_group_ids = ["sg-01380b40dc19ad166"]
-    },
-```
-
-If you run `terraform apply` now, you'll notice that this code will destroy the `server-iis`, allowing us to target a specific instance that needs to be updated/removed.
-
-
-### Task 7: Update the output variables to pull DNS addresses.
-
-When using Terraform's `for-each` our output blocks need to be updated to utilize `for` to loop through the server names.  This differs from using `count` which utilized the Terraform splat operator `*`.  Add the following output block to your `main.tf`.
-
-```hcl
-output "public_dns" {
-  description = "Public DNS names of the Servers"
-  value = { for p in sort(keys(var.servers)) : p => aws_instance.web[p].public_dns }
-}
-```
+Change the value of your `server_os` variable to now specify `windows` and the conditional operator will query for the Windows AMI using the `data` interpolation.
